@@ -53,7 +53,7 @@ func (s *Snapshotter) snapShotFS(f io.Writer) error {
 	w := tar.NewWriter(f)
 	defer w.Close()
 
-	return filepath.Walk("/", func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk("/img", func(path string, info os.FileInfo, err error) error {
 		if ignorePath(path) {
 			return nil
 		}
