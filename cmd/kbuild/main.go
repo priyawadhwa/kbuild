@@ -45,6 +45,7 @@ func main() {
 		panic(err.Error())
 	}
 
+	// TODO: is this still necessary???
 	w := v1.VolumeMount{
 		Name:      "workdir",
 		MountPath: "/work-dir",

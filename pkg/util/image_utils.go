@@ -46,7 +46,7 @@ func getFileSystemFromReference(ref types.ImageReference) error {
 			}
 		}
 		tr := tar.NewReader(reader)
-		err = unpackTar(tr, "/")
+		err = unpackTar(tr, "/img")
 		if err != nil {
 			logrus.Errorf("Failed to untar layer with error: %s", err)
 		}

@@ -22,6 +22,7 @@ var dockerfilePath = flag.String("dockerfile", "/dockerfile/Dockerfile", "Path t
 func main() {
 	flag.Parse()
 
+	// Read and parse dockerfile
 	b, err := ioutil.ReadFile(*dockerfilePath)
 	if err != nil {
 		panic(err)
@@ -33,6 +34,7 @@ func main() {
 	}
 	from := stages[0].BaseName
 
+	// Unpack file system at /work-dir/img
 	err = util.GetFileSystemFromImage(from)
 	if err != nil {
 		panic(err)
@@ -105,5 +107,4 @@ func main() {
 		}
 	}
 
-	// Somehow append layers into final image
 }
