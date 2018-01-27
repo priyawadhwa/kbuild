@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/builder/dockerfile/instructions"
+	"github.com/priyawadhwa/kbuild/appender"
 	"github.com/priyawadhwa/kbuild/pkg/dockerfile"
 	"github.com/priyawadhwa/kbuild/pkg/snapshot"
 	"github.com/priyawadhwa/kbuild/pkg/util"
@@ -23,17 +24,20 @@ func main() {
 	flag.Parse()
 
 	// Read and parse dockerfile
+	fmt.Println("Reading dockerfile")
 	b, err := ioutil.ReadFile(*dockerfilePath)
 	if err != nil {
 		panic(err)
 	}
 
+	fmt.Println("Parsing dockerfile")
 	stages, err := dockerfile.Parse(b)
 	if err != nil {
 		panic(err)
 	}
 	from := stages[0].BaseName
 
+	fmt.Println("Unpacking filesystem...")
 	// Unpack file system at /work-dir/img
 	err = util.GetFileSystemFromImage(from)
 	if err != nil {
@@ -56,6 +60,8 @@ func main() {
 			}
 		}
 	}
+	fmt.Println("Commands to run")
+	fmt.Println(commandsToRun)
 
 	hasher := func(p string) string {
 		h := md5.New()
@@ -81,13 +87,16 @@ func main() {
 	}
 
 	l := snapshot.NewLayeredMap(hasher)
-	snapshotter := snapshot.NewSnapshotter(l, "/work-dir")
-
+	fmt.Println("new snapshotter in /work-dir")
+	// Should be /work-dir
+	dir := "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/testexec/"
+	snapshotter := snapshot.NewSnapshotter(l, dir)
+	fmt.Println("new snapshotter")
 	// Take initial snapshot
 	if err := snapshotter.Init(); err != nil {
 		panic(err)
 	}
-
+	fmt.Println("initial snapshot")
 	for _, c := range commandsToRun {
 		fmt.Println("cmd: ", c[0])
 		fmt.Println("args: ", c[1:])
@@ -107,4 +116,9 @@ func main() {
 		}
 	}
 
+	// Append layers and push image
+	err = appender.AppendLayersAndPushImage(from, "gcr.io/priya-wadhwa/kbuild:final")
+	if err != nil {
+		panic(err)
+	}
 }
