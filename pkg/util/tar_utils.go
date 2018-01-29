@@ -18,12 +18,11 @@ package util
 
 import (
 	"archive/tar"
+	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 func unpackTar(tr *tar.Reader, path string) error {

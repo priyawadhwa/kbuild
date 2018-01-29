@@ -41,7 +41,8 @@ func main() {
 
 	// Unpack file system at /work-dir/img
 	fmt.Println("Unpacking filesystem...")
-	err = util.GetFileSystemFromImage(from)
+	util.GetFileSystemFromImage(from)
+	util.CopyTarsToFileSystem(from)
 	if err != nil {
 		panic(err)
 	}

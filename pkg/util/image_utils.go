@@ -4,12 +4,13 @@ package util
 
 import (
 	"archive/tar"
-	"io"
-	"os"
-	"strings"
+	"fmt"
 
+	"github.com/containers/image/copy"
 	"github.com/containers/image/docker"
 	"github.com/containers/image/pkg/compression"
+	"github.com/containers/image/signature"
+	"github.com/containers/image/transports/alltransports"
 	"github.com/containers/image/types"
 	"github.com/sirupsen/logrus"
 )
@@ -31,6 +32,7 @@ func getFileSystemFromReference(ref types.ImageReference) error {
 	}
 
 	for _, b := range img.LayerInfos() {
+		fmt.Println(b)
 		bi, _, err := imgSrc.GetBlob(b)
 		if err != nil {
 			logrus.Errorf("Failed to pull image layer: %s", err)
@@ -51,9 +53,6 @@ func getFileSystemFromReference(ref types.ImageReference) error {
 			}
 		}
 		tr := tar.NewReader(reader)
-		if err = copyTar(bi, b); err != nil {
-			return err
-		}
 		err = unpackTar(tr, dir)
 		if err != nil {
 			logrus.Errorf("Failed to untar layer with error: %s", err)
@@ -62,17 +61,40 @@ func getFileSystemFromReference(ref types.ImageReference) error {
 	return nil
 }
 
-func copyTar(bi io.ReadCloser, b types.BlobInfo) error {
-	digest := strings.Split(b.Digest.String(), ":")[1]
-	tarDestPath := dir + "/work-dir/" + digest + ".tar"
-	tarDest, err := os.Create(tarDestPath)
+func getPolicyContext() (*signature.PolicyContext, error) {
+	policy, err := signature.DefaultPolicy(nil)
+	if err != nil {
+		fmt.Println("Error retrieving policy")
+		return nil, err
+	}
+
+	policyContext, err := signature.NewPolicyContext(policy)
+	if err != nil {
+		fmt.Println("Error retrieving policy context")
+		return nil, err
+	}
+	return policyContext, nil
+}
+
+func CopyTarsToFileSystem(srcImg string) error {
+	srcRef, err := alltransports.ParseImageName("docker://" + srcImg)
 	if err != nil {
 		return err
 	}
-	defer tarDest.Close()
 
-	_, err = io.Copy(tarDest, bi)
+	destRef, err := alltransports.ParseImageName("dir:" + dir + "/work-dir")
+	if err != nil {
+		return err
+	}
+	policyContext, err := getPolicyContext()
+	if err != nil {
+		return err
+	}
 
+	err = copy.Image(policyContext, destRef, srcRef, nil)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
