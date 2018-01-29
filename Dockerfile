@@ -1,3 +1,3 @@
-FROM gcr.io/google-appengine/debian9:latest
+FROM gcr.io/google-appengine/debian9
 ADD main /work-dir/
-ADD test/Dockerfile /dockerfile/
+ADD Dockerfile /work-dir/dockerfile/Dockerfile

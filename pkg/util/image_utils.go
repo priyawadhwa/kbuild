@@ -4,7 +4,7 @@ package util
 
 import (
 	"archive/tar"
-	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var dir = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/testexec"
+var dir = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/exec"
 
 func getFileSystemFromReference(ref types.ImageReference) error {
 	img, err := ref.NewImage(nil)
@@ -51,10 +51,9 @@ func getFileSystemFromReference(ref types.ImageReference) error {
 			}
 		}
 		tr := tar.NewReader(reader)
-		fmt.Println("get file system")
-		fmt.Println(reader, tr)
-		fmt.Println(bi)
-		copyBlobToDir(b, *tr)
+		if err = copyTar(bi, b); err != nil {
+			return err
+		}
 		err = unpackTar(tr, dir)
 		if err != nil {
 			logrus.Errorf("Failed to untar layer with error: %s", err)
@@ -63,16 +62,18 @@ func getFileSystemFromReference(ref types.ImageReference) error {
 	return nil
 }
 
-func copyBlobToDir(b types.BlobInfo, tr tar.Reader) error {
+func copyTar(bi io.ReadCloser, b types.BlobInfo) error {
 	digest := strings.Split(b.Digest.String(), ":")[1]
-	destFile, err := os.Create(dir + "/work-dir/" + digest + ".tar")
+	tarDestPath := dir + "/work-dir/" + digest + ".tar"
+	tarDest, err := os.Create(tarDestPath)
 	if err != nil {
 		return err
 	}
-	defer destFile.Close()
-	// First copy tar file into dir
-	// _, err = io.Copy(destFile, tr)
-	return err
+	defer tarDest.Close()
+
+	_, err = io.Copy(tarDest, bi)
+
+	return nil
 }
 
 // GetFileSystemFromImage pulls an image and unpacks it to a file system at root

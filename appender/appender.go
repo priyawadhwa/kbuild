@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-var directory = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/testexec/work-dir/"
+var directory = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/exec/work-dir/"
 
 var ms image.MutableSource
 
@@ -32,7 +32,7 @@ func AppendLayersAndPushImage(srcImg, dstImg string) error {
 }
 
 func appendLayers() error {
-	fmt.Println("appendnig layers")
+	fmt.Println("Appending layers")
 	dir, err := os.Open(directory)
 	if err != nil {
 		panic(err)
@@ -54,10 +54,12 @@ func appendLayers() error {
 		}
 		fmt.Println(file)
 		// Rename file
-		d := digest.FromBytes(contents).String()
-		diffID := strings.Split(d, ":")
-		fmt.Println("renaming ", directory+file, " to ", directory+diffID[1]+".tar")
-		os.Rename(directory+file, directory+diffID[1]+".tar")
+		if strings.HasPrefix(file, "layer") {
+			d := digest.FromBytes(contents).String()
+			diffID := strings.Split(d, ":")
+			fmt.Println("Renaming ", directory+file, " to ", directory+diffID[1]+".tar")
+			os.Rename(directory+file, directory+diffID[1]+".tar")
+		}
 		ms.AppendLayer(contents)
 	}
 	return ms.WriteManifest(directory + "manifest.json")

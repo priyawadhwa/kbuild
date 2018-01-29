@@ -76,6 +76,7 @@ func (m *MutableSource) populateManifestAndConfig() error {
 	}
 
 	m.mfst, err = manifest.Schema2FromManifest(mfstBytes)
+	fmt.Println("Manifest is ", m.mfst)
 	if err != nil {
 		return err
 	}
@@ -116,13 +117,12 @@ func gzipBytes(b []byte) ([]byte, error) {
 // AppendLayer appends an uncompressed blob to the image, preserving the invariants required across the config and manifest.
 func (m *MutableSource) AppendLayer(content []byte) error {
 	compressedBlob, err := gzipBytes(content)
-	fmt.Println("appending layer")
-	fmt.Println(compressedBlob)
 	if err != nil {
 		return err
 	}
+	fmt.Println("Compressed digest is: ", digest.FromBytes(compressedBlob))
 	dgst := digest.FromBytes(content)
-	fmt.Println(dgst)
+	fmt.Println("Digest is: ", dgst)
 
 	// Add the layer to the manifest.
 	descriptor := manifest.Schema2Descriptor{

@@ -12,7 +12,7 @@ import (
 )
 
 // TODO: should be /
-var directory = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/testexec"
+var directory = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/exec"
 
 type Snapshotter struct {
 	l         *LayeredMap
