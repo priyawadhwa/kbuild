@@ -40,9 +40,15 @@ func appendLayers() error {
 	defer dir.Close()
 	files, err := dir.Readdir(0)
 	var tars []string
+	cfgDigest := ms.GetConfigDigest()
+	d := strings.Split(cfgDigest.String(), ":")
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".tar") {
-			tars = append(tars, file.Name())
+			if !strings.HasPrefix(file.Name(), d[1]) {
+				fmt.Println(d[1])
+				fmt.Println("ADDING ", file)
+				tars = append(tars, file.Name())
+			}
 		}
 	}
 	sort.Strings(tars)
@@ -61,6 +67,10 @@ func appendLayers() error {
 			os.Rename(directory+file, directory+diffID[1]+".tar")
 		}
 		ms.AppendLayer(contents)
+	}
+	err = ms.WriteConfig(directory)
+	if err != nil {
+		return err
 	}
 	return ms.WriteManifest(directory + "manifest.json")
 

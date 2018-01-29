@@ -61,6 +61,15 @@ func getFileSystemFromReference(ref types.ImageReference) error {
 	return nil
 }
 
+// GetFileSystemFromImage pulls an image and unpacks it to a file system at root
+func GetFileSystemFromImage(img string) error {
+	ref, err := docker.ParseReference("//" + img)
+	if err != nil {
+		return err
+	}
+	return getFileSystemFromReference(ref)
+}
+
 func getPolicyContext() (*signature.PolicyContext, error) {
 	policy, err := signature.DefaultPolicy(nil)
 	if err != nil {
@@ -96,13 +105,4 @@ func CopyTarsToFileSystem(srcImg string) error {
 		return err
 	}
 	return nil
-}
-
-// GetFileSystemFromImage pulls an image and unpacks it to a file system at root
-func GetFileSystemFromImage(img string) error {
-	ref, err := docker.ParseReference("//" + img)
-	if err != nil {
-		return err
-	}
-	return getFileSystemFromReference(ref)
 }

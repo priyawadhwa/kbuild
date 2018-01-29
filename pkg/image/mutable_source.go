@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	"github.com/containers/image/manifest"
@@ -66,6 +67,10 @@ func (m *MutableSource) GetManifest(instanceDigest *digest.Digest) ([]byte, stri
 		return nil, "", err
 	}
 	return s, manifest.DockerV2Schema2MediaType, err
+}
+
+func (m *MutableSource) GetConfigDigest() digest.Digest {
+	return m.mfst.ConfigDescriptor.Digest
 }
 
 // populateManifestAndConfig parses the raw manifest and configs, storing them on the struct.
@@ -154,6 +159,25 @@ func (m *MutableSource) WriteManifest(path string) error {
 		panic(err)
 	}
 	err = ioutil.WriteFile(path, mfstContents, 0644)
+	return err
+}
+
+func (m *MutableSource) WriteConfig(path string) error {
+	fmt.Println("CONFIG STUFF")
+	fmt.Println(m.cfg)
+	fmt.Println(m.cfg.History)
+	cfgBlob, err := json.Marshal(m.cfg)
+	if err != nil {
+		return err
+	}
+	cfgDigest := digest.FromBytes(cfgBlob).String()
+	fmt.Println("cfgDigest is ", cfgDigest)
+	d := strings.Split(cfgDigest, ":")[1]
+	filePath := path + d + ".tar"
+	fmt.Println("CONFIG STIFF")
+	fmt.Println(m.mfst.ConfigDescriptor)
+	err = ioutil.WriteFile(filePath, cfgBlob, 0644)
+	m.saveConfig()
 	return err
 }
 
