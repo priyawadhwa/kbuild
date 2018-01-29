@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-var directory = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/exec/work-dir/"
+var directory = "/work-dir/"
 
 var ms image.MutableSource
 

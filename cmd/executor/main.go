@@ -21,8 +21,7 @@ import (
 
 var dockerfilePath = flag.String("dockerfile", "/dockerfile/Dockerfile", "Path to Dockerfile.")
 
-// should be /work-dir
-var dir = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/exec/"
+var dir = "/"
 
 func main() {
 	flag.Parse()
