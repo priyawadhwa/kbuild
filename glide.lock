@@ -1,5 +1,5 @@
 hash: 1ba8413c09d868fc89fdb978e9cc4171f8fa8e37f933c835b4de788c3343eb76
-updated: 2018-01-24T15:26:19.732477058-08:00
+updated: 2018-01-29T17:16:29.7564411-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -13,7 +13,7 @@ imports:
   subpackages:
   - pathdriver
 - name: github.com/containers/image
-  version: 495da41bd26c50be62fa07ae903ea2ee54c00283
+  version: 7a4a9acea22d7e4cd35e05bbf893c4618eb3b8a9
   subpackages:
   - copy
   - directory
@@ -92,7 +92,7 @@ imports:
   - registry/storage/cache
   - registry/storage/cache/memory
 - name: github.com/docker/docker
-  version: 59e86068e6b2c23f083bd30b9987fea3fe90ba18
+  version: 9d61e5c8c1d85f633643a8b9071393dc417d56dd
   subpackages:
   - api
   - api/types
@@ -197,7 +197,7 @@ imports:
 - name: github.com/mattn/go-runewidth
   version: 97311d9f7767e3d6f422ea06661bc2c7a19e8a5d
 - name: github.com/mattn/go-shellwords
-  version: 95c860c1895b21b58903abdd1d9c591560b0601c
+  version: ab9f49b5289e10ea2a20b861b831ab65e5980024
 - name: github.com/Microsoft/go-winio
   version: 7da180ee92d8bd8bb8c37fc560e673e6557c392f
   subpackages:
@@ -217,7 +217,7 @@ imports:
   - specs-go
   - specs-go/v1
 - name: github.com/opencontainers/runc
-  version: 9f9c96235cc97674e935002fc3d78361b696a69e
+  version: 9a270e2dae5961dd5d6ad6d87f60f30c47aef40b
   subpackages:
   - libcontainer/system
   - libcontainer/user
@@ -236,7 +236,7 @@ imports:
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pkg/errors
-  version: e881fd58d78e04cf6d0de1217f8707c8cc2249bc
+  version: 30136e27e2ac8d167177e8a583aa4c3fea5be833
 - name: github.com/pquerna/ffjson
   version: d49c2bc1aa135aad0c6f4fc2056623ec78f5d5ac
   subpackages:
@@ -247,7 +247,7 @@ imports:
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/sirupsen/logrus
-  version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
+  version: 768a92a02685ee7535069fc1581341b41bab9b72
 - name: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
 - name: github.com/tchap/go-patricia
