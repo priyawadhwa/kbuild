@@ -127,7 +127,7 @@
     "pkg/system",
     "pkg/truncindex"
   ]
-  revision = "396d2ec7fe889fc266c87311ce3bf1e15da75167"
+  revision = "0d32dfce498e06c132c60dac945081bf44c22464"
 
 [[projects]]
   branch = "master"
