@@ -143,12 +143,20 @@ func (m *MutableSource) AppendLayer(content []byte) error {
 
 // WriteManifest writes the final manfiest to a file at path
 func (m *MutableSource) WriteManifest(path string) error {
-	mfstContents, err := m.mfst.Serialize()
+	mfstContents, err := json.Marshal(m.mfst)
 	if err != nil {
 		panic(err)
 	}
 	err = ioutil.WriteFile(path, mfstContents, 0644)
 	return err
+}
+
+func (m *MutableSource) GetReference() (types.ImageReference, error) {
+	err := m.saveConfig()
+	if err != nil {
+		return nil, err
+	}
+
 }
 
 func (m *MutableSource) WriteConfig(path string) error {
