@@ -6,7 +6,6 @@ import (
 	"github.com/containers/image/docker"
 	"github.com/containers/image/signature"
 	"github.com/containers/image/transports/alltransports"
-	digest "github.com/opencontainers/go-digest"
 	"github.com/priyawadhwa/kbuild/pkg/image"
 
 	"io/ioutil"
@@ -32,7 +31,6 @@ func AppendLayersAndPushImage(srcImg, dstImg string) error {
 }
 
 func appendLayers() error {
-	fmt.Println("Appending layers")
 	dir, err := os.Open(directory)
 	if err != nil {
 		panic(err)
@@ -52,18 +50,9 @@ func appendLayers() error {
 		if err != nil {
 			panic(err)
 		}
-		// Rename file
-		d := digest.FromBytes(contents).String()
-		diffID := strings.Split(d, ":")[1]
-		fmt.Println("Renaming ", directory+file, " to ", directory+diffID+".tar")
-		os.Rename(directory+file, directory+diffID+".tar")
 		ms.AppendLayer(contents)
 	}
-	err = ms.WriteConfig(directory)
-	if err != nil {
-		return err
-	}
-	return ms.WriteManifest(directory + "manifest.json")
+	return nil
 
 }
 
@@ -82,32 +71,20 @@ func initializeMutableSource(img string) error {
 }
 
 func pushImage(destImg string) error {
-	srcRef, err := alltransports.ParseImageName("dir:" + directory)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	srcRef, err := image.NewProxyReference(nil, ms)
 
 	destRef, err := alltransports.ParseImageName("docker://" + destImg)
 	if err != nil {
-		fmt.Println("failed to get destRef: ", err)
-		os.Exit(1)
+		return err
 	}
 
 	policyContext, err := getPolicyContext()
 	if err != nil {
-		fmt.Println("failed to get policy context: ", err)
-		os.Exit(1)
+		return err
 	}
 
 	err = copy.Image(policyContext, destRef, srcRef, nil)
-
-	if err != nil {
-		fmt.Println("failed to copy image: ", err)
-		os.Exit(1)
-	}
-	return nil
-
+	return err
 }
 
 func getPolicyContext() (*signature.PolicyContext, error) {

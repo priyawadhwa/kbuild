@@ -6,11 +6,9 @@ import (
 	"archive/tar"
 	"fmt"
 
-	"github.com/containers/image/copy"
 	"github.com/containers/image/docker"
 	"github.com/containers/image/pkg/compression"
 	"github.com/containers/image/signature"
-	"github.com/containers/image/transports/alltransports"
 	"github.com/containers/image/types"
 	"github.com/sirupsen/logrus"
 )
@@ -32,7 +30,6 @@ func getFileSystemFromReference(ref types.ImageReference) error {
 	}
 
 	for _, b := range img.LayerInfos() {
-		fmt.Println(b)
 		bi, _, err := imgSrc.GetBlob(b)
 		if err != nil {
 			logrus.Errorf("Failed to pull image layer: %s", err)
@@ -74,28 +71,6 @@ func getPolicyContext() (*signature.PolicyContext, error) {
 		return nil, err
 	}
 	return policyContext, nil
-}
-
-func CopyTarsToFileSystem(srcImg string) error {
-	srcRef, err := alltransports.ParseImageName("docker://" + srcImg)
-	if err != nil {
-		return err
-	}
-
-	destRef, err := alltransports.ParseImageName("dir:" + dir + "/work-dir")
-	if err != nil {
-		return err
-	}
-	policyContext, err := getPolicyContext()
-	if err != nil {
-		return err
-	}
-
-	err = copy.Image(policyContext, destRef, srcRef, nil)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // GetFileSystemFromImage pulls an image and unpacks it to a file system at root

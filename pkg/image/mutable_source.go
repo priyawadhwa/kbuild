@@ -17,10 +17,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
-	"strings"
 	"time"
 
 	"github.com/containers/image/manifest"
@@ -61,7 +59,7 @@ func NewMutableSource(r types.ImageReference) (*MutableSource, error) {
 }
 
 // GetManifest marshals the stored manifest to the byte format.
-func (m *MutableSource) GetManifest(instanceDigest *digest.Digest) ([]byte, string, error) {
+func (m MutableSource) GetManifest(instanceDigest *digest.Digest) ([]byte, string, error) {
 	s, err := json.Marshal(m.mfst)
 	if err := m.saveConfig(); err != nil {
 		return nil, "", err
@@ -77,7 +75,6 @@ func (m *MutableSource) populateManifestAndConfig() error {
 	}
 
 	m.mfst, err = manifest.Schema2FromManifest(mfstBytes)
-	fmt.Println("Manifest is ", m.mfst)
 	if err != nil {
 		return err
 	}
@@ -97,7 +94,7 @@ func (m *MutableSource) populateManifestAndConfig() error {
 }
 
 // GetBlob first checks the stored "extra" blobs, then proxies the call to the original source.
-func (m *MutableSource) GetBlob(bi types.BlobInfo) (io.ReadCloser, int64, error) {
+func (m MutableSource) GetBlob(bi types.BlobInfo) (io.ReadCloser, int64, error) {
 	if b, ok := m.extraBlobs[bi.Digest.String()]; ok {
 		return ioutil.NopCloser(bytes.NewReader(b)), int64(len(b)), nil
 	}
@@ -139,37 +136,6 @@ func (m *MutableSource) AppendLayer(content []byte) error {
 	m.cfg.History = append(m.cfg.History, history)
 
 	return nil
-}
-
-// WriteManifest writes the final manfiest to a file at path
-func (m *MutableSource) WriteManifest(path string) error {
-	mfstContents, err := json.Marshal(m.mfst)
-	if err != nil {
-		panic(err)
-	}
-	err = ioutil.WriteFile(path, mfstContents, 0644)
-	return err
-}
-
-func (m *MutableSource) GetReference() (types.ImageReference, error) {
-	err := m.saveConfig()
-	if err != nil {
-		return nil, err
-	}
-
-}
-
-func (m *MutableSource) WriteConfig(path string) error {
-	cfgBlob, err := json.Marshal(m.cfg)
-	if err != nil {
-		return err
-	}
-	cfgDigest := digest.FromBytes(cfgBlob).String()
-	d := strings.Split(cfgDigest, ":")[1]
-	filePath := path + d + ".tar"
-	err = ioutil.WriteFile(filePath, cfgBlob, 0644)
-	m.saveConfig()
-	return err
 }
 
 // saveConfig marshals the stored image config, and updates the references to it in the manifest.
