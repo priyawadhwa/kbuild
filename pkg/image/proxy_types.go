@@ -15,9 +15,8 @@ package image
 
 import (
 	"context"
-	"io"
-
 	"github.com/containers/image/docker/reference"
+	"io"
 
 	"github.com/containers/image/types"
 	digest "github.com/opencontainers/go-digest"
@@ -47,11 +46,11 @@ func NewProxySource(ref types.ImageReference) (*ProxySource, error) {
 	}, nil
 }
 
-func (p *ProxySource) Reference() types.ImageReference {
+func (p ProxySource) Reference() types.ImageReference {
 	return p.Ref
 }
 
-func (p *ProxySource) Close() error {
+func (p ProxySource) Close() error {
 	return nil
 }
 
@@ -60,19 +59,19 @@ func (p *ProxySource) GetTargetManifest(digest digest.Digest) ([]byte, string, e
 }
 
 // GetSignatures returns the image's signatures.  It may use a remote (= slow) service.
-func (p *ProxySource) GetSignatures(ctx context.Context, d *digest.Digest) ([][]byte, error) {
+func (p ProxySource) GetSignatures(ctx context.Context, d *digest.Digest) ([][]byte, error) {
 	return p.src.GetSignatures(ctx, d)
 }
 
-func (p *ProxySource) LayerInfosForCopy() []types.BlobInfo {
+func (p ProxySource) LayerInfosForCopy() []types.BlobInfo {
 	return nil
 }
 
-func (p *ProxySource) GetBlob(b types.BlobInfo) (io.ReadCloser, int64, error) {
+func (p ProxySource) GetBlob(b types.BlobInfo) (io.ReadCloser, int64, error) {
 	return p.src.GetBlob(b)
 }
 
-func (p *ProxySource) GetManifest(d *digest.Digest) ([]byte, string, error) {
+func (p ProxySource) GetManifest(d *digest.Digest) ([]byte, string, error) {
 	return p.src.GetManifest(d)
 }
 
@@ -82,38 +81,45 @@ type ProxyReference struct {
 	src types.ImageSource
 }
 
-func (p *ProxyReference) Transport() types.ImageTransport {
+func NewProxyReference(ref types.ImageReference, src types.ImageSource) (*ProxyReference, error) {
+	return &ProxyReference{
+		ref: ref,
+		src: src,
+	}, nil
+}
+
+func (p ProxyReference) Transport() types.ImageTransport {
 	return p.ref.Transport()
 }
 
-func (p *ProxyReference) StringWithinTransport() string {
+func (p ProxyReference) StringWithinTransport() string {
 	return p.ref.StringWithinTransport()
 }
 
-func (p *ProxyReference) DockerReference() reference.Named {
+func (p ProxyReference) DockerReference() reference.Named {
 	return p.ref.DockerReference()
 }
 
-func (p *ProxyReference) PolicyConfigurationIdentity() string {
+func (p ProxyReference) PolicyConfigurationIdentity() string {
 	return p.ref.PolicyConfigurationIdentity()
 }
 
-func (p *ProxyReference) PolicyConfigurationNamespaces() []string {
+func (p ProxyReference) PolicyConfigurationNamespaces() []string {
 	return p.ref.PolicyConfigurationNamespaces()
 }
 
-func (p *ProxyReference) NewImage(ctx *types.SystemContext) (types.ImageCloser, error) {
+func (p ProxyReference) NewImage(ctx *types.SystemContext) (types.ImageCloser, error) {
 	return p.ref.NewImage(ctx)
 }
 
-func (p *ProxyReference) NewImageSource(ctx *types.SystemContext) (types.ImageSource, error) {
+func (p ProxyReference) NewImageSource(ctx *types.SystemContext) (types.ImageSource, error) {
 	return p.src, nil
 }
 
-func (p *ProxyReference) NewImageDestination(ctx *types.SystemContext) (types.ImageDestination, error) {
+func (p ProxyReference) NewImageDestination(ctx *types.SystemContext) (types.ImageDestination, error) {
 	return p.ref.NewImageDestination(ctx)
 }
 
-func (p *ProxyReference) DeleteImage(ctx *types.SystemContext) error {
+func (p ProxyReference) DeleteImage(ctx *types.SystemContext) error {
 	return nil
 }
