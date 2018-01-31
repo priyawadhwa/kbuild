@@ -13,7 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var dir = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/exec/"
+var dir = "/"
 
 func getFileSystemFromReference(ref types.ImageReference) error {
 	img, err := ref.NewImage(nil)
