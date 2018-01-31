@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-var directory = "/work-dir/"
+var directory = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/exec/work-dir/"
 
 var ms image.MutableSource
 
@@ -41,7 +41,7 @@ func appendLayers() error {
 	files, err := dir.Readdir(0)
 	var tars []string
 	for _, file := range files {
-		if strings.HasSuffix(file.Name(), ".tar") {
+		if strings.HasSuffix(file.Name(), ".tar") && strings.HasPrefix(file.Name(), "layer") {
 			tars = append(tars, file.Name())
 		}
 	}
@@ -52,15 +52,16 @@ func appendLayers() error {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(file)
 		// Rename file
-		if strings.HasPrefix(file, "layer") {
-			d := digest.FromBytes(contents).String()
-			diffID := strings.Split(d, ":")
-			fmt.Println("Renaming ", directory+file, " to ", directory+diffID[1]+".tar")
-			os.Rename(directory+file, directory+diffID[1]+".tar")
-		}
+		d := digest.FromBytes(contents).String()
+		diffID := strings.Split(d, ":")[1]
+		fmt.Println("Renaming ", directory+file, " to ", directory+diffID+".tar")
+		os.Rename(directory+file, directory+diffID+".tar")
 		ms.AppendLayer(contents)
+	}
+	err = ms.WriteConfig(directory)
+	if err != nil {
+		return err
 	}
 	return ms.WriteManifest(directory + "manifest.json")
 
@@ -81,10 +82,7 @@ func initializeMutableSource(img string) error {
 }
 
 func pushImage(destImg string) error {
-	fmt.Println("PUshing images")
-
 	srcRef, err := alltransports.ParseImageName("dir:" + directory)
-	fmt.Println("Parsed directory somehow")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

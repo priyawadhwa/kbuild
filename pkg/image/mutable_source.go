@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	"github.com/containers/image/manifest"
@@ -116,27 +117,20 @@ func gzipBytes(b []byte) ([]byte, error) {
 
 // AppendLayer appends an uncompressed blob to the image, preserving the invariants required across the config and manifest.
 func (m *MutableSource) AppendLayer(content []byte) error {
-	compressedBlob, err := gzipBytes(content)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Compressed digest is: ", digest.FromBytes(compressedBlob))
-	dgst := digest.FromBytes(content)
-	fmt.Println("Digest is: ", dgst)
+	diffID := digest.FromBytes(content)
 
 	// Add the layer to the manifest.
 	descriptor := manifest.Schema2Descriptor{
 		MediaType: manifest.DockerV2Schema2LayerMediaType,
 		Size:      int64(len(content)),
-		Digest:    dgst,
+		Digest:    diffID,
 	}
 	m.mfst.LayersDescriptors = append(m.mfst.LayersDescriptors, descriptor)
 
-	m.extraBlobs[dgst.String()] = content
-	m.extraLayers = append(m.extraLayers, dgst)
+	m.extraBlobs[diffID.String()] = content
+	m.extraLayers = append(m.extraLayers, diffID)
 
 	// Also add it to the config.
-	diffID := digest.FromBytes(content)
 	m.cfg.RootFS.DiffIDs = append(m.cfg.RootFS.DiffIDs, diffID)
 	history := manifest.Schema2History{
 		Created: time.Now(),
@@ -149,11 +143,32 @@ func (m *MutableSource) AppendLayer(content []byte) error {
 
 // WriteManifest writes the final manfiest to a file at path
 func (m *MutableSource) WriteManifest(path string) error {
-	mfstContents, err := m.mfst.Serialize()
+	mfstContents, err := json.Marshal(m.mfst)
 	if err != nil {
 		panic(err)
 	}
 	err = ioutil.WriteFile(path, mfstContents, 0644)
+	return err
+}
+
+func (m *MutableSource) GetReference() (types.ImageReference, error) {
+	err := m.saveConfig()
+	if err != nil {
+		return nil, err
+	}
+
+}
+
+func (m *MutableSource) WriteConfig(path string) error {
+	cfgBlob, err := json.Marshal(m.cfg)
+	if err != nil {
+		return err
+	}
+	cfgDigest := digest.FromBytes(cfgBlob).String()
+	d := strings.Split(cfgDigest, ":")[1]
+	filePath := path + d + ".tar"
+	err = ioutil.WriteFile(filePath, cfgBlob, 0644)
+	m.saveConfig()
 	return err
 }
 
