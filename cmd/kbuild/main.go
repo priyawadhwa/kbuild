@@ -31,6 +31,7 @@ func main() {
 	}
 
 	var dockerfilePath = flag.String("dockerfile", "./Dockerfile", "path to dockerfile")
+	var name = flag.String("name", "gcr.io/priya-wadhwa/kbuild:finalimage", "name of image destination")
 	flag.Parse()
 
 	// use the current context in kubeconfig
@@ -45,10 +46,14 @@ func main() {
 		panic(err.Error())
 	}
 
-	// TODO: is this still necessary???
 	w := v1.VolumeMount{
 		Name:      "workdir",
 		MountPath: "/work-dir",
+	}
+
+	env := v1.EnvVar{
+		Name:  "KBUILD_DEST_IMAGE",
+		Value: *name,
 	}
 
 	b, err := ioutil.ReadFile(*dockerfilePath)
@@ -79,14 +84,24 @@ func main() {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
-							Name:         "init-static",
-							Image:        "gcr.io/dlorenc-vmtest2/kbuild-static:latest",
-							Command:      []string{"/work-dir/main"},
+							Name:  "init-static",
+							Image: "gcr.io/priya-wadhwa/kbuilder:test",
+							Command: []string{
+								"/bin/main",
+							},
+							Args:         []string{},
 							VolumeMounts: []v1.VolumeMount{w, v1.VolumeMount{Name: "dockerfile", MountPath: "/dockerfile"}},
+							Env:          []v1.EnvVar{env},
 						},
 					},
 					RestartPolicy: v1.RestartPolicyNever,
 					Volumes: []v1.Volume{
+						{
+							Name: "workdir",
+							VolumeSource: v1.VolumeSource{
+								EmptyDir: &v1.EmptyDirVolumeSource{},
+							},
+						},
 						{
 							Name: "dockerfile",
 							VolumeSource: v1.VolumeSource{
@@ -121,6 +136,7 @@ func main() {
 	}
 
 	// Stream logs
+	fmt.Println("Stream logs")
 	for {
 		opts := metav1.ListOptions{LabelSelector: labels.Set(j.Spec.Selector.MatchLabels).AsSelector().String()}
 		jobPods, err := clientset.CoreV1().Pods("default").List(opts)
@@ -136,7 +152,7 @@ func main() {
 		}
 		break
 	}
-
+	fmt.Println("Something omsething")
 	for {
 		j, err := clientset.BatchV1().Jobs("default").Get(job.Name, metav1.GetOptions{})
 		if err != nil {

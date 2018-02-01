@@ -11,8 +11,7 @@ import (
 	"strings"
 )
 
-// TODO: should be /
-var directory = "/Users/priyawadhwa/go/src/github.com/priyawadhwa/kbuild/exec"
+var directory = "/"
 
 type Snapshotter struct {
 	l         *LayeredMap
@@ -33,7 +32,7 @@ func (s *Snapshotter) Init() error {
 
 func (s *Snapshotter) TakeSnapshot() error {
 	fmt.Println("taking snapshots in ", s.directory)
-	path := filepath.Join(s.directory+"/work-dir", fmt.Sprintf("layer-%d.tar", len(s.snapshots)))
+	path := filepath.Join(s.directory+"work-dir/", fmt.Sprintf("layer-%d.tar", len(s.snapshots)))
 	fmt.Println("Generating a snapshot in: ", path)
 	f, err := os.Create(path)
 	defer f.Close()
@@ -70,9 +69,8 @@ func (s *Snapshotter) snapShotFS(f io.Writer) error {
 	})
 }
 
-//TODO: remove this
 func ignorePath(p string) bool {
-	for _, d := range []string{directory + "/dev", directory + "/sys", directory + "/proc", directory + "/work-dir", directory + "/dockerfile"} {
+	for _, d := range []string{"/dev", "/sys", "/proc", "/work-dir", "/dockerfile"} {
 		if strings.HasPrefix(p, d) {
 			return true
 		}

@@ -1,3 +1,5 @@
-FROM l.gcr.io/google/ubuntu16_04
-ADD main /work-dir/
-ADD Dockerfile /work-dir/dockerfile/Dockerfile
+# init
+FROM scratch
+ADD main /bin/
+ADD cmd/executor/ca-certificates.crt /etc/ssl/certs/
+ADD test/Dockerfile /dockerfile/

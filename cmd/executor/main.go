@@ -15,6 +15,7 @@ import (
 	"github.com/priyawadhwa/kbuild/appender"
 	"github.com/priyawadhwa/kbuild/pkg/dockerfile"
 
+	"github.com/priyawadhwa/kbuild/pkg/env"
 	"github.com/priyawadhwa/kbuild/pkg/snapshot"
 	"github.com/priyawadhwa/kbuild/pkg/util"
 )
@@ -38,12 +39,15 @@ func main() {
 	}
 	from := stages[0].BaseName
 
-	// Unpack file system at /work-dir/img
-	fmt.Println("Unpacking filesystem...")
+	// Unpack file system to root
+	fmt.Println("Unpacking filesystem...", from)
 	util.GetFileSystemFromImage(from)
 	if err != nil {
 		panic(err)
 	}
+
+	// Save environment variables
+	env.SetEnvironmentVariables(from)
 
 	commandsToRun := [][]string{}
 	for _, s := range stages {
@@ -113,8 +117,11 @@ func main() {
 	}
 
 	// Append layers and push image
-	fmt.Println("Appending image")
-	err = appender.AppendLayersAndPushImage(from, "gcr.io/priya-wadhwa/kbuild:final")
+	// Get name of final image
+
+	destImg := os.Getenv("KBUILD_DEST_IMAGE")
+	fmt.Println("Appending image to ", destImg)
+	err = appender.AppendLayersAndPushImage(from, destImg)
 	if err != nil {
 		panic(err)
 	}
