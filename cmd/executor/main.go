@@ -48,6 +48,7 @@ func main() {
 
 	// Save environment variables
 	env.SetEnvironmentVariables(from)
+	fmt.Println("Environment variable is ", os.Getenv("PATH"))
 
 	commandsToRun := [][]string{}
 	for _, s := range stages {
