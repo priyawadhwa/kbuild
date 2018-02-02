@@ -42,7 +42,7 @@ func main() {
 
 	// Unpack file system to root
 	fmt.Println("Unpacking filesystem...", from)
-	util.GetFileSystemFromImage(from)
+	err = util.GetFileSystemFromImage(from)
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +110,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(os.Stat("/bin/sh"))
+		fmt.Println(os.Lstat("/bin/sh"))
+		fmt.Println(filepath.EvalSymlinks("/bin/sh"))
 		cmd := exec.Command(c[0], c[1:]...)
 		combout, err := cmd.CombinedOutput()
 		if err != nil {

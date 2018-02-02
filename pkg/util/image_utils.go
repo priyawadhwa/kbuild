@@ -5,54 +5,56 @@ package util
 import (
 	"archive/tar"
 	"fmt"
-
 	"github.com/containers/image/docker"
 	"github.com/containers/image/pkg/compression"
 	"github.com/containers/image/signature"
 	"github.com/containers/image/types"
-	"github.com/sirupsen/logrus"
+	"os"
 )
 
 var dir = "/"
 
-func getFileSystemFromReference(ref types.ImageReference) error {
+func getFileSystemFromReference(ref types.ImageReference, imgSrc types.ImageSource, path string) error {
 	img, err := ref.NewImage(nil)
 	if err != nil {
-		logrus.Error(err)
 		return err
 	}
 	defer img.Close()
-
-	imgSrc, err := ref.NewImageSource(nil)
-	if err != nil {
-		logrus.Error(err)
-		return err
-	}
-
+	fmt.Println("layer infos: ", img.LayerInfos())
+	symlinks := make(map[string]string)
 	for _, b := range img.LayerInfos() {
+		fmt.Println("Unpacking ", b)
 		bi, _, err := imgSrc.GetBlob(b)
 		if err != nil {
-			logrus.Errorf("Failed to pull image layer: %s", err)
 			return err
 		}
-		// try and detect layer compression
+		defer bi.Close()
 		f, reader, err := compression.DetectCompression(bi)
 		if err != nil {
-			logrus.Errorf("Failed to detect image compression: %s", err)
 			return err
 		}
+		// Decompress if necessary.
 		if f != nil {
-			// decompress if necessary
 			reader, err = f(reader)
 			if err != nil {
-				logrus.Errorf("Failed to decompress image: %s", err)
 				return err
 			}
 		}
 		tr := tar.NewReader(reader)
-		err = unpackTar(tr, dir)
+		symlinks, err = unpackTar(tr, path, symlinks)
 		if err != nil {
-			logrus.Errorf("Failed to untar layer with error: %s", err)
+			return err
+		}
+	}
+	return createSymlinks(symlinks)
+}
+
+func createSymlinks(symlinks map[string]string) error {
+	for newname, oldname := range symlinks {
+
+		err := os.Symlink(newname, oldname)
+		if err != nil {
+			fmt.Println(err, newname, oldname)
 		}
 	}
 	return nil
@@ -79,5 +81,9 @@ func GetFileSystemFromImage(img string) error {
 	if err != nil {
 		return err
 	}
-	return getFileSystemFromReference(ref)
+	imgSrc, err := ref.NewImageSource(nil)
+	if err != nil {
+		return err
+	}
+	return getFileSystemFromReference(ref, imgSrc, dir)
 }

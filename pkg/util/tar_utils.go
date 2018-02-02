@@ -18,14 +18,19 @@ package util
 
 import (
 	"archive/tar"
-	"github.com/sirupsen/logrus"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
-func unpackTar(tr *tar.Reader, path string) error {
+var whitelist = []string{"/etc/resolv.conf", "/etc/hosts", "/sys"}
+var symlinks = make(map[string]string)
+
+func unpackTar(tr *tar.Reader, path string, symlinks map[string]string) (map[string]string, error) {
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -34,7 +39,7 @@ func unpackTar(tr *tar.Reader, path string) error {
 		}
 		if err != nil {
 			logrus.Error("Error getting next tar header")
-			return err
+			return nil, err
 		}
 
 		if strings.Contains(header.Name, ".wh.") {
@@ -55,6 +60,9 @@ func unpackTar(tr *tar.Reader, path string) error {
 		}
 
 		target := filepath.Join(path, header.Name)
+		if checkWhitelist(target) {
+			continue
+		}
 		mode := header.FileInfo().Mode()
 		switch header.Typeflag {
 
@@ -62,80 +70,91 @@ func unpackTar(tr *tar.Reader, path string) error {
 		case tar.TypeDir:
 			if _, err := os.Stat(target); os.IsNotExist(err) {
 				if err := os.MkdirAll(target, mode); err != nil {
-					return err
+					return nil, err
 				}
 			} else {
 				if err := os.Chmod(target, mode); err != nil {
-					return err
+					return nil, err
 				}
 			}
 
 		// if it's a file create it
 		case tar.TypeReg:
-			// It's possible for a file to be included before the directory it's in is created.
-			baseDir := filepath.Dir(target)
-			if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-				logrus.Debugf("baseDir %s for file %s does not exist. Creating.", baseDir, target)
-				if err := os.MkdirAll(baseDir, 0755); err != nil {
-					return err
-				}
-			}
 
-			// It's possible we end up creating files that can't be overwritten based on their permissions.
-			// Explicitly delete an existing file before continuing.
-			if _, err := os.Stat(target); !os.IsNotExist(err) {
-				logrus.Debugf("Removing %s for overwrite.", target)
-				if err := os.Remove(target); err != nil {
-					return err
-				}
+			err = createFile(target)
+			if err != nil {
+				return nil, err
 			}
-
 			currFile, err := os.Create(target)
 			if err != nil {
-				logrus.Errorf("Error creating file %s %s", target, err)
-				return err
+				fmt.Println("Error creating file %s %s", target, err)
+				return nil, err
 			}
 			// manually set permissions on file, since the default umask (022) will interfere
 			if err = os.Chmod(target, mode); err != nil {
-				logrus.Errorf("Error updating file permissions on %s", target)
-				return err
+				fmt.Println("Error updating file permissions on %s", target)
+				return nil, err
 			}
 			_, err = io.Copy(currFile, tr)
 			if err != nil {
-				return err
+				return nil, err
 			}
+			currFile.Close()
+		// if it's a symlink also create it
+		case tar.TypeSymlink:
+			err = createFile(target)
+			if err != nil {
+				return nil, err
+			}
+			currFile, err := os.Create(target)
+			if err != nil {
+				fmt.Println("Error creating file %s %s", target, err)
+				return nil, err
+			}
+			// manually set permissions on file, since the default umask (022) will interfere
+			if err = os.Chmod(target, mode); err != nil {
+				fmt.Println("Error updating file permissions on %s", target)
+				return nil, err
+			}
+			_, err = io.Copy(currFile, tr)
+			if err != nil {
+				return nil, err
+			}
+			// Create symlink
+			symlinks[target] = header.Linkname
 			currFile.Close()
 		}
 
 	}
+	return symlinks, nil
+}
+
+func checkWhitelist(target string) bool {
+	for _, w := range whitelist {
+		if strings.HasPrefix(target, w) {
+			return true
+		}
+	}
+	return false
+}
+
+func createFile(target string) error {
+	// It's possible for a file to be included before the directory it's in is created.
+	baseDir := filepath.Dir(target)
+	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+		fmt.Println("baseDir %s for file %s does not exist. Creating.", baseDir, target)
+		if err := os.MkdirAll(baseDir, 0755); err != nil {
+			return err
+		}
+	}
+
+	// It's possible we end up creating files that can't be overwritten based on their permissions.
+	// Explicitly delete an existing file before continuing.
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		fmt.Println("Removing %s for overwrite.", target)
+		if err := os.Remove(target); err != nil {
+			return err
+		}
+	}
 	return nil
-}
-
-// UnTar takes in a path to a tar file and writes the untarred version to the provided target.
-// Only untars one level, does not untar nested tars.
-func UnTar(r io.Reader, target string) error {
-	if _, ok := os.Stat(target); ok != nil {
-		os.MkdirAll(target, 0775)
-	}
-
-	tr := tar.NewReader(r)
-	err := unpackTar(tr, target)
-	return err
-}
-
-func IsTar(path string) bool {
-	return filepath.Ext(path) == ".tar" ||
-		filepath.Ext(path) == ".tar.gz" ||
-		filepath.Ext(path) == ".tgz"
-}
-
-func CheckTar(image string) bool {
-	if strings.TrimSuffix(image, ".tar") == image {
-		return false
-	}
-	if _, err := os.Stat(image); err != nil {
-		logrus.Errorf("%s does not exist", image)
-		return false
-	}
-	return true
 }
