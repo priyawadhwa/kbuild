@@ -71,6 +71,9 @@ func initializeMutableSource(img string) error {
 }
 
 func pushImage(destImg string) error {
+	// TODO: REMOVE
+	destImg = "gcr.io/priya-wadhwa/kbuild:finalpushed"
+	fmt.Println("Pushing image to ", destImg)
 	srcRef, err := image.NewProxyReference(nil, ms)
 
 	destRef, err := alltransports.ParseImageName("docker://" + destImg)

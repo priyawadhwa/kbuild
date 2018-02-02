@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/builder/dockerfile/instructions"
@@ -49,6 +50,11 @@ func main() {
 	// Save environment variables
 	env.SetEnvironmentVariables(from)
 	fmt.Println("Environment variable is ", os.Getenv("PATH"))
+
+	filepath.Walk("/bin", func(path string, info os.FileInfo, err error) error {
+		fmt.Println(path)
+		return nil
+	})
 
 	commandsToRun := [][]string{}
 	for _, s := range stages {
@@ -104,9 +110,11 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		fmt.Println(os.Stat("/bin/sh"))
 		cmd := exec.Command(c[0], c[1:]...)
 		combout, err := cmd.CombinedOutput()
 		if err != nil {
+			fmt.Println(combout)
 			panic(err)
 		}
 		fmt.Printf("Output from %s %s\n", cmd.Path, cmd.Args)
