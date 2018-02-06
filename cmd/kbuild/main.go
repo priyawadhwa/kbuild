@@ -87,7 +87,7 @@ func main() {
 							Name:  "init-static",
 							Image: "gcr.io/priya-wadhwa/kbuilder:test",
 							Command: []string{
-								"/bin/main",
+								"/work-dir/main",
 							},
 							Args:         []string{},
 							VolumeMounts: []v1.VolumeMount{w, v1.VolumeMount{Name: "dockerfile", MountPath: "/dockerfile"}},
