@@ -9,10 +9,10 @@ import (
 	"github.com/containers/image/pkg/compression"
 	"github.com/containers/image/signature"
 	"github.com/containers/image/types"
-	"os"
 )
 
 var dir = "/"
+var whiteouts map[string]bool
 
 func getFileSystemFromReference(ref types.ImageReference, imgSrc types.ImageSource, path string) error {
 	img, err := ref.NewImage(nil)
@@ -20,8 +20,8 @@ func getFileSystemFromReference(ref types.ImageReference, imgSrc types.ImageSour
 		return err
 	}
 	defer img.Close()
+	whiteouts = make(map[string]bool)
 	fmt.Println("layer infos: ", img.LayerInfos())
-	symlinks := make(map[string]string)
 	for _, b := range img.LayerInfos() {
 		fmt.Println("Unpacking ", b)
 		bi, _, err := imgSrc.GetBlob(b)
@@ -41,20 +41,9 @@ func getFileSystemFromReference(ref types.ImageReference, imgSrc types.ImageSour
 			}
 		}
 		tr := tar.NewReader(reader)
-		symlinks, err = unpackTar(tr, path, symlinks)
+		err = unpackTar(tr, path)
 		if err != nil {
 			return err
-		}
-	}
-	return createSymlinks(symlinks)
-}
-
-func createSymlinks(symlinks map[string]string) error {
-	for newname, oldname := range symlinks {
-
-		err := os.Symlink(newname, oldname)
-		if err != nil {
-			fmt.Println(err, newname, oldname)
 		}
 	}
 	return nil

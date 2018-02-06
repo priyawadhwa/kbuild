@@ -1,4 +1,4 @@
-FROM gcr.io/google-appengine/python:latest
+FROM gcr.io/google-appengine/debian9:latest
 # RUN apt-get update && apt-get install -y curl
 RUN echo "hey" > /etc/foo
 RUN echo "baz" > /etc/foo

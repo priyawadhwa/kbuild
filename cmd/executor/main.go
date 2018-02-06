@@ -9,7 +9,9 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
+	// "path/filepath"
+	"github.com/sirupsen/logrus"
+
 	"strings"
 
 	"github.com/docker/docker/builder/dockerfile/instructions"
@@ -27,7 +29,7 @@ var dir = "/"
 
 func main() {
 	flag.Parse()
-
+	logrus.SetLevel(logrus.DebugLevel)
 	// Read and parse dockerfile
 	b, err := ioutil.ReadFile(*dockerfilePath)
 	if err != nil {
@@ -46,15 +48,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	// Save environment variables
 	env.SetEnvironmentVariables(from)
 	fmt.Println("Environment variable is ", os.Getenv("PATH"))
-
-	filepath.Walk("/bin", func(path string, info os.FileInfo, err error) error {
-		fmt.Println(path)
-		return nil
-	})
 
 	commandsToRun := [][]string{}
 	for _, s := range stages {
@@ -107,15 +103,9 @@ func main() {
 	for _, c := range commandsToRun {
 		fmt.Println("cmd: ", c[0])
 		fmt.Println("args: ", c[1:])
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(os.Lstat("/bin/sh"))
-		fmt.Println(filepath.EvalSymlinks("/bin/sh"))
 		cmd := exec.Command(c[0], c[1:]...)
 		combout, err := cmd.CombinedOutput()
 		if err != nil {
-			fmt.Println(combout)
 			panic(err)
 		}
 		fmt.Printf("Output from %s %s\n", cmd.Path, cmd.Args)
