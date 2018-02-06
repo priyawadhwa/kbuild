@@ -30,7 +30,7 @@ func main() {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
 
-	var dockerfilePath = flag.String("dockerfile", "./Dockerfile", "path to dockerfile")
+	var dockerfilePath = flag.String("dockerfile", "/dockerfile/Dockerfile", "path to dockerfile")
 	var name = flag.String("name", "gcr.io/priya-wadhwa/kbuild:finalimage", "name of image destination")
 	flag.Parse()
 
@@ -46,10 +46,10 @@ func main() {
 		panic(err.Error())
 	}
 
-	w := v1.VolumeMount{
-		Name:      "workdir",
-		MountPath: "/work-dir",
-	}
+	//	w := v1.VolumeMount{
+	//		Name:      "workdir",
+	//		MountPath: "/work-dir",
+	//	}
 
 	env := v1.EnvVar{
 		Name:  "KBUILD_DEST_IMAGE",
@@ -85,7 +85,7 @@ func main() {
 					Containers: []v1.Container{
 						{
 							Name:  "init-static",
-							Image: "gcr.io/priya-wadhwa/kbuilder:test",
+							Image: "gcr.io/priya-wadhwa/kbuilder:latest",
 							Command: []string{
 								"/work-dir/main",
 							},

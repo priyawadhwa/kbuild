@@ -121,6 +121,8 @@ func main() {
 
 	destImg := os.Getenv("KBUILD_DEST_IMAGE")
 	fmt.Println("Appending image to ", destImg)
+	// TODO: remove
+	destImg = "gcr.io/priya-wadhwa/kbuilder:finalimage"
 	err = appender.AppendLayersAndPushImage(from, destImg)
 	if err != nil {
 		panic(err)

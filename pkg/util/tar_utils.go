@@ -111,25 +111,18 @@ func unpackTar(tr *tar.Reader, path string) error {
 			}
 			currFile.Close()
 		case tar.TypeSymlink:
-			// It's possible for a file to be included before the directory it's in is created.
-			baseDir := filepath.Dir(target)
-			if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-				logrus.Debugf("baseDir %s for file %s does not exist. Creating.", baseDir, target)
-				if err := os.MkdirAll(baseDir, 0755); err != nil {
-					return err
-				}
-			}
 			// It's possible we end up creating files that can't be overwritten based on their permissions.
 			// Explicitly delete an existing file before continuing.
 			if _, err := os.Stat(target); !os.IsNotExist(err) {
-				logrus.Debugf("Removing %s for overwrite.", target)
-				if err := os.Remove(target); err != nil {
-					return err
+				logrus.Debugf("Removing %s to create symlink.", target)
+				if err := os.RemoveAll(target); err != nil {
+					logrus.Errorf("Failed to delete %s, and it's contents", target)
 				}
 			}
+
 			err = os.Symlink(header.Linkname, target)
 			if err != nil {
-				return err
+				logrus.Errorf("Failed to create symlink between %s and %s", header.Linkname, target)
 			}
 		}
 
