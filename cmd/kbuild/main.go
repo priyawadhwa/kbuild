@@ -90,18 +90,12 @@ func main() {
 								"/work-dir/main",
 							},
 							Args:         []string{},
-							VolumeMounts: []v1.VolumeMount{w, v1.VolumeMount{Name: "dockerfile", MountPath: "/dockerfile"}},
+							VolumeMounts: []v1.VolumeMount{v1.VolumeMount{Name: "dockerfile", MountPath: "/dockerfile"}},
 							Env:          []v1.EnvVar{env},
 						},
 					},
 					RestartPolicy: v1.RestartPolicyNever,
 					Volumes: []v1.Volume{
-						{
-							Name: "workdir",
-							VolumeSource: v1.VolumeSource{
-								EmptyDir: &v1.EmptyDirVolumeSource{},
-							},
-						},
 						{
 							Name: "dockerfile",
 							VolumeSource: v1.VolumeSource{
