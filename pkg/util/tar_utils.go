@@ -41,7 +41,7 @@ func unpackTar(tr *tar.Reader, path string) error {
 		}
 		target := filepath.Join(path, header.Name)
 		basename := filepath.Base(target)
-		dirname := filepath.Base(target)
+		dirname := filepath.Dir(target)
 		tombstone := strings.HasPrefix(basename, ".wh.")
 		if tombstone {
 			basename = strings.TrimPrefix(basename, ".wh.")
@@ -156,7 +156,6 @@ func checkWhiteouts(file string) bool {
 			}
 		}
 		file = directory
-
 	}
 	return false
 }
