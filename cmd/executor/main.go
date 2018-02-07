@@ -49,7 +49,7 @@ func main() {
 	// Save environment variables
 	env.SetEnvironmentVariables(from)
 	logrus.Info("Environment variable is ", os.Getenv("PATH"))
-
+	return
 	commandsToRun := [][]string{}
 	for _, s := range stages {
 		for _, cmd := range s.Commands {
