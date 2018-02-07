@@ -41,16 +41,16 @@ func main() {
 		panic(err)
 	}
 	from := stages[0].BaseName
-
+	printConfig()
 	// Unpack file system to root
-	fmt.Println("Unpacking filesystem...", from)
+	logrus.Info("Unpacking filesystem...", from)
 	err = util.GetFileSystemFromImage(from)
 	if err != nil {
 		panic(err)
 	}
 	// Save environment variables
 	env.SetEnvironmentVariables(from)
-	fmt.Println("Environment variable is ", os.Getenv("PATH"))
+	logrus.Info("Environment variable is ", os.Getenv("PATH"))
 
 	commandsToRun := [][]string{}
 	for _, s := range stages {
@@ -122,10 +122,21 @@ func main() {
 	destImg := os.Getenv("KBUILD_DEST_IMAGE")
 	fmt.Println("Appending image to ", destImg)
 	// TODO: remove
+	printConfig()
 	destImg = "gcr.io/priya-wadhwa/kbuilder:finalimage"
 	err = appender.AppendLayersAndPushImage(from, destImg)
 	if err != nil {
 		panic(err)
 	}
 
+}
+
+func printConfig() {
+	b, err := ioutil.ReadFile("/root/.docker/config.json") // just pass the file name
+	if err != nil {
+		fmt.Print(err)
+	}
+	str := string(b) // convert content to a 'string'
+	logrus.Debug("Printing config")
+	logrus.Debug(str)
 }

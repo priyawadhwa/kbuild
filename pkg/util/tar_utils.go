@@ -115,18 +115,30 @@ func unpackTar(tr *tar.Reader, path string) error {
 			// Explicitly delete an existing file before continuing.
 			if _, err := os.Stat(target); !os.IsNotExist(err) {
 				logrus.Debugf("Removing %s to create symlink.", target)
-				if err := os.RemoveAll(target); err != nil {
-					logrus.Errorf("Failed to delete %s, and it's contents", target)
-				}
+				walkAndRemove(target, mode)
 			}
 
 			err = os.Symlink(header.Linkname, target)
 			if err != nil {
-				logrus.Errorf("Failed to create symlink between %s and %s", header.Linkname, target)
+				logrus.Errorf("Failed to create symlink between %s and %s: %s", header.Linkname, target, err)
 			}
 		}
 
 	}
+	return nil
+}
+
+func walkAndRemove(p string, mode os.FileMode) error {
+	filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
+		if err = os.Chmod(path, 0777); err != nil {
+			logrus.Errorf("Error updating file permissions on %s before removing for symlink creation", path)
+			return err
+		}
+		if err := os.RemoveAll(path); err != nil {
+			logrus.Errorf("Failed to delete %s, and it's contents: %s", path, err)
+		}
+		return nil
+	})
 	return nil
 }
 
