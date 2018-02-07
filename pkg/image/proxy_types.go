@@ -54,7 +54,7 @@ func (p ProxySource) Close() error {
 	return nil
 }
 
-func (p *ProxySource) GetTargetManifest(digest digest.Digest) ([]byte, string, error) {
+func (p ProxySource) GetTargetManifest(digest digest.Digest) ([]byte, string, error) {
 	return p.GetTargetManifest(digest)
 }
 

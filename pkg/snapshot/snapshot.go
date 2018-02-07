@@ -2,7 +2,6 @@ package snapshot
 
 import (
 	"archive/tar"
-	"compress/gzip"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -40,9 +39,7 @@ func (s *Snapshotter) TakeSnapshot() error {
 		return err
 	}
 
-	gz := gzip.NewWriter(f)
-	defer gz.Close()
-	if err := s.snapShotFS(gz); err != nil {
+	if err := s.snapShotFS(f); err != nil {
 		return err
 	}
 

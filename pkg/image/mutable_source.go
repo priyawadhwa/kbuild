@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"time"
@@ -61,9 +62,13 @@ func NewMutableSource(r types.ImageReference) (*MutableSource, error) {
 // GetManifest marshals the stored manifest to the byte format.
 func (m MutableSource) GetManifest(instanceDigest *digest.Digest) ([]byte, string, error) {
 	s, err := json.Marshal(m.mfst)
-	if err := m.saveConfig(); err != nil {
+	logrus.Debug("Manfiest: ", m.mfst)
+	if err := m.SaveConfig(); err != nil {
 		return nil, "", err
 	}
+	logrus.Debug("Config: ", m.cfg)
+	logrus.Debug(m.cfg.Parent)
+	logrus.Debug(m.mfst.ConfigDescriptor)
 	return s, manifest.DockerV2Schema2MediaType, err
 }
 
@@ -114,20 +119,27 @@ func gzipBytes(b []byte) ([]byte, error) {
 
 // AppendLayer appends an uncompressed blob to the image, preserving the invariants required across the config and manifest.
 func (m *MutableSource) AppendLayer(content []byte) error {
-	diffID := digest.FromBytes(content)
+	compressedBlob, err := gzipBytes(content)
+	if err != nil {
+		return err
+	}
+
+	dgst := digest.FromBytes(compressedBlob)
+	logrus.Debug("Digest is ", dgst)
 
 	// Add the layer to the manifest.
 	descriptor := manifest.Schema2Descriptor{
 		MediaType: manifest.DockerV2Schema2LayerMediaType,
 		Size:      int64(len(content)),
-		Digest:    diffID,
+		Digest:    dgst,
 	}
 	m.mfst.LayersDescriptors = append(m.mfst.LayersDescriptors, descriptor)
 
-	m.extraBlobs[diffID.String()] = content
-	m.extraLayers = append(m.extraLayers, diffID)
+	m.extraBlobs[dgst.String()] = compressedBlob
 
 	// Also add it to the config.
+	diffID := digest.FromBytes(content)
+	logrus.Debug("diffId is ", diffID)
 	m.cfg.RootFS.DiffIDs = append(m.cfg.RootFS.DiffIDs, diffID)
 	history := manifest.Schema2History{
 		Created: time.Now(),
@@ -138,8 +150,9 @@ func (m *MutableSource) AppendLayer(content []byte) error {
 	return nil
 }
 
-// saveConfig marshals the stored image config, and updates the references to it in the manifest.
-func (m *MutableSource) saveConfig() error {
+// SaveConfig marshals the stored image config, and updates the references to it in the manifest.
+func (m *MutableSource) SaveConfig() error {
+	logrus.Debug("Saving config")
 	cfgBlob, err := json.Marshal(m.cfg)
 	if err != nil {
 		return err

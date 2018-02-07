@@ -1,12 +1,12 @@
 package appender
 
 import (
-	"fmt"
 	"github.com/containers/image/copy"
 	"github.com/containers/image/docker"
 	"github.com/containers/image/signature"
 	"github.com/containers/image/transports/alltransports"
 	"github.com/priyawadhwa/kbuild/pkg/image"
+	"github.com/sirupsen/logrus"
 
 	"io/ioutil"
 	"os"
@@ -27,6 +27,9 @@ func AppendLayersAndPushImage(srcImg, dstImg string) error {
 	if err := appendLayers(); err != nil {
 		return err
 	}
+	if err := ms.SaveConfig(); err != nil {
+		return err
+	}
 	return pushImage(dstImg)
 }
 
@@ -44,12 +47,13 @@ func appendLayers() error {
 		}
 	}
 	sort.Strings(tars)
-
+	logrus.Debug("Appending layers: ", tars)
 	for _, file := range tars {
 		contents, err := ioutil.ReadFile(directory + file)
 		if err != nil {
 			panic(err)
 		}
+		logrus.Debug("Appending layer ", file)
 		ms.AppendLayer(contents)
 	}
 	return nil
@@ -72,7 +76,7 @@ func initializeMutableSource(img string) error {
 
 func pushImage(destImg string) error {
 	// TODO: REMOVE
-	fmt.Println("Pushing image to ", destImg)
+	logrus.Info("Pushing image to ", destImg)
 	srcRef, err := image.NewProxyReference(nil, ms)
 
 	destRef, err := alltransports.ParseImageName("docker://" + destImg)
@@ -92,13 +96,13 @@ func pushImage(destImg string) error {
 func getPolicyContext() (*signature.PolicyContext, error) {
 	policy, err := signature.DefaultPolicy(nil)
 	if err != nil {
-		fmt.Println("Error retrieving policy")
+		logrus.Debug("Error retrieving policy: %s", err)
 		return nil, err
 	}
 
 	policyContext, err := signature.NewPolicyContext(policy)
 	if err != nil {
-		fmt.Println("Error retrieving policy context")
+		logrus.Debug("Error retrieving policy context: %s", err)
 		return nil, err
 	}
 	return policyContext, nil

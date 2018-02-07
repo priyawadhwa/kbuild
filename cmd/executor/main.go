@@ -5,12 +5,11 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	// "path/filepath"
-	"github.com/sirupsen/logrus"
 
 	"strings"
 
@@ -41,7 +40,6 @@ func main() {
 		panic(err)
 	}
 	from := stages[0].BaseName
-	printConfig()
 	// Unpack file system to root
 	logrus.Info("Unpacking filesystem...", from)
 	err = util.GetFileSystemFromImage(from)
@@ -121,22 +119,9 @@ func main() {
 
 	destImg := os.Getenv("KBUILD_DEST_IMAGE")
 	fmt.Println("Appending image to ", destImg)
-	// TODO: remove
-	printConfig()
-	destImg = "gcr.io/priya-wadhwa/kbuilder:finalimage"
 	err = appender.AppendLayersAndPushImage(from, destImg)
 	if err != nil {
 		panic(err)
 	}
 
-}
-
-func printConfig() {
-	b, err := ioutil.ReadFile("/root/.docker/config.json") // just pass the file name
-	if err != nil {
-		fmt.Print(err)
-	}
-	str := string(b) // convert content to a 'string'
-	logrus.Debug("Printing config")
-	logrus.Debug(str)
 }
