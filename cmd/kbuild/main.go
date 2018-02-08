@@ -48,12 +48,6 @@ func main() {
 		panic(err.Error())
 	}
 
-	// create source context
-	if err := storage.CreateStorageBucket(*context); err != nil {
-		panic(err)
-	}
-	return
-
 	env := v1.EnvVar{
 		Name:  "KBUILD_DEST_IMAGE",
 		Value: *name,

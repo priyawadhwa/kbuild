@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/context"
 	// "golang.org/x/oauth2/google"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -16,12 +15,12 @@ import (
 )
 
 // CreateStorageBucket creates a storage bucket to store the source context in
-func CreateStorageBucket(sc string) error {
+func CreateStorageBucket(sc string) (string, error) {
 	ctx := context.Background()
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		log.Fatal(err)
+		return "", nil
 	}
 	projectID, err := getProjectID("")
 	bucketName := fmt.Sprintf("kbuild-buckets-%d", time.Now().Unix())
@@ -30,10 +29,11 @@ func CreateStorageBucket(sc string) error {
 
 	// Creates the new bucket.
 	if err := bucket.Create(ctx, projectID, nil); err != nil {
-		log.Fatalf("Failed to create bucket: %v", err)
+		logrus.Errorf("Failed to create bucket: %v", err)
+		return "", err
 	}
 	logrus.Info("Created bucket ", bucketName)
-	return UploadSourceContextToStorageBucket(sc, bucket)
+	return bucketName, nil
 }
 
 // DeleteStorageBucket deletes the storage bucket the source context is in
