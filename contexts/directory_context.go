@@ -11,13 +11,17 @@ func (d DirectoryContext) Name() string {
 	return "directory"
 }
 
+// Copy local directory into a GCS storage bucket
 func (d DirectoryContext) CopyContext(context string) (string, error) {
 	// Create GCS storage bucket
-	if err := storage.CreateStorageBucket(context); err != nil {
-		return err
+	bucket, bucketName, err := storage.CreateStorageBucket()
+	if err != nil {
+		return "", err
 	}
-
-	return nil
+	if err := storage.UploadContextToBucket(context, bucket); err != nil {
+		return "", err
+	}
+	return bucketName, err
 }
 
 func (d DirectoryContext) GetFileFromContext(filename string) ([]byte, error) {

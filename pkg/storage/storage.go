@@ -15,12 +15,12 @@ import (
 )
 
 // CreateStorageBucket creates a storage bucket to store the source context in
-func CreateStorageBucket(sc string) (string, error) {
+func CreateStorageBucket() (*storage.BucketHandle, string, error) {
 	ctx := context.Background()
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return "", nil
+		return nil, "", nil
 	}
 	projectID, err := getProjectID("")
 	bucketName := fmt.Sprintf("kbuild-buckets-%d", time.Now().Unix())
@@ -30,10 +30,10 @@ func CreateStorageBucket(sc string) (string, error) {
 	// Creates the new bucket.
 	if err := bucket.Create(ctx, projectID, nil); err != nil {
 		logrus.Errorf("Failed to create bucket: %v", err)
-		return "", err
+		return nil, "", err
 	}
 	logrus.Info("Created bucket ", bucketName)
-	return bucketName, nil
+	return bucket, bucketName, nil
 }
 
 // DeleteStorageBucket deletes the storage bucket the source context is in
@@ -42,22 +42,22 @@ func DeleteStorageBucket() error {
 	return nil
 }
 
-// UploadSourceContextToStorageBucket uploads the source context to the storage bucket
-func UploadSourceContextToStorageBucket(sc string, bucket *storage.BucketHandle) error {
-	return filepath.Walk(sc, func(path string, info os.FileInfo, err error) error {
+// UploadContextToBucket uploads the given context to the given bucket
+func UploadContextToBucket(context string, bucket *storage.BucketHandle) error {
+	return filepath.Walk(context, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
-		f, err := os.Open(info.Name())
+		f, err := os.Open(path)
 		if err != nil {
-			logrus.Debugf("Could not open", info.Name())
+			logrus.Debugf("Could not open %s, err: %v", path, err)
 			return nil
 		}
 		defer f.Close()
 		buf := bytes.NewBuffer(nil)
 		_, err = io.Copy(buf, f)
 		if err != nil {
-			logrus.Debugf("Could not copy contents of", info.Name())
+			logrus.Debugf("Could not copy contents of %s, err: %v", path, err)
 			return nil
 		}
 		return uploadFile(bucket, buf.Bytes(), path)
@@ -73,14 +73,14 @@ func uploadFile(bucket *storage.BucketHandle, fileContents []byte, path string) 
 	w := obj.NewWriter(ctx)
 	// Close, just like writing a file.
 	if err := w.Close(); err != nil {
-		logrus.Debug("Failed to close file")
+		logrus.Debugf("Failed to close file, err: %v", err)
 	}
 	if _, err := w.Write(fileContents); err != nil {
-		logrus.Error("createFile: unable to write file %q: %v", path, err)
+		logrus.Errorf("createFile: unable to write file %s: %v", path, err)
 		return err
 	}
 	if err := w.Close(); err != nil {
-		logrus.Error("createFile: unable to close bucket: %v", err)
+		logrus.Errorf("createFile: unable to close bucket: %v", err)
 		return err
 	}
 	return nil

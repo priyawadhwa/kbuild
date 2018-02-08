@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"log"
@@ -25,6 +26,7 @@ import (
 
 func main() {
 	var kubeconfig *string
+	logrus.SetLevel(logrus.DebugLevel)
 	if home := homeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
@@ -47,6 +49,16 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+
+	// create source context
+	bucket, _, err := storage.CreateStorageBucket()
+	if err != nil {
+		panic(err)
+	}
+	if err := storage.UploadContextToBucket(*context, bucket); err != nil {
+		panic(err)
+	}
+	return
 
 	env := v1.EnvVar{
 		Name:  "KBUILD_DEST_IMAGE",
