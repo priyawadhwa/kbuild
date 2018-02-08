@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/priyawadhwa/kbuild/pkg/storage"
 	"github.com/priyawadhwa/kbuild/pkg/util"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +32,7 @@ func main() {
 	}
 
 	var dockerfilePath = flag.String("dockerfile", "/dockerfile/Dockerfile", "path to dockerfile")
+	var context = flag.String("context", "", "source context")
 	var name = flag.String("name", "gcr.io/priya-wadhwa/kbuild:finalimage", "name of image destination")
 	flag.Parse()
 
@@ -46,10 +48,11 @@ func main() {
 		panic(err.Error())
 	}
 
-	//	w := v1.VolumeMount{
-	//		Name:      "workdir",
-	//		MountPath: "/work-dir",
-	//	}
+	// create source context
+	if err := storage.CreateStorageBucket(*context); err != nil {
+		panic(err)
+	}
+	return
 
 	env := v1.EnvVar{
 		Name:  "KBUILD_DEST_IMAGE",
