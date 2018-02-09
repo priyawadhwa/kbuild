@@ -2,11 +2,15 @@ package contexts
 
 type Context interface {
 	Name() string
-	CopyContext(context string) (string, error)
-	GetFileFromContext(filename string) ([]byte, error)
+	CopyFilesToContext(files []string) (string, error)
+	GetFilesFromSource(path, source string) (map[string][]byte, error)
 	CleanupContext() error
 }
 
 var Contexts = map[string]Context{
 	"directory": DirectoryContext{},
+}
+
+func GetContext(context string) Context {
+	return DirectoryContext{}
 }

@@ -6,9 +6,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	// "golang.org/x/oauth2/google"
+	"google.golang.org/api/iterator"
 	"io"
+	"io/ioutil"
 	"os"
-	"path/filepath"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -43,38 +44,33 @@ func DeleteStorageBucket() error {
 }
 
 // UploadContextToBucket uploads the given context to the given bucket
-func UploadContextToBucket(context string, bucket *storage.BucketHandle) error {
-	return filepath.Walk(context, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
-		}
-		f, err := os.Open(path)
+func UploadContextToBucket(files []string, bucket *storage.BucketHandle) error {
+	for _, file := range files {
+		f, err := os.Open(file)
 		if err != nil {
-			logrus.Debugf("Could not open %s, err: %v", path, err)
+			logrus.Debugf("Could not open %s, err: %v", file, err)
 			return nil
 		}
 		defer f.Close()
 		buf := bytes.NewBuffer(nil)
 		_, err = io.Copy(buf, f)
 		if err != nil {
-			logrus.Debugf("Could not copy contents of %s, err: %v", path, err)
+			logrus.Debugf("Could not copy contents of %s, err: %v", file, err)
 			return nil
 		}
-		return uploadFile(bucket, buf.Bytes(), path)
-	})
+		if err := uploadFile(bucket, buf.Bytes(), file); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // uploadFile uploads a file to a Google Cloud Storage bucket.
 func uploadFile(bucket *storage.BucketHandle, fileContents []byte, path string) error {
 	ctx := context.Background()
-	obj := bucket.Object(path)
 	// Write something to obj.
 	// w implements io.Writer.
-	w := obj.NewWriter(ctx)
-	// Close, just like writing a file.
-	if err := w.Close(); err != nil {
-		logrus.Debugf("Failed to close file, err: %v", err)
-	}
+	w := bucket.Object(path).NewWriter(ctx)
 	if _, err := w.Write(fileContents); err != nil {
 		logrus.Errorf("createFile: unable to write file %s: %v", path, err)
 		return err
@@ -86,10 +82,53 @@ func uploadFile(bucket *storage.BucketHandle, fileContents []byte, path string) 
 	return nil
 }
 
-// GetFilesFromStorageBucket gets files/dirs that match the context
-func GetFilesFromStorageBucket(context string) error {
+// GetFilesFromStorageBucket gets all files at path
+func GetFilesFromStorageBucket(bucketName string, path string) (map[string][]byte, error) {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	bucket := client.Bucket(bucketName)
+	// return nil
+	files, err := listFilesInBucket(bucket, bucketName, path)
+	if err != nil {
+		return nil, err
+	}
+	fileMap := make(map[string][]byte)
+	for _, file := range files {
+		reader, err := bucket.Object(file).NewReader(ctx)
+		if err != nil {
+			return nil, err
+		}
+		defer reader.Close()
+		contents, err := ioutil.ReadAll(reader)
+		if err != nil {
+			return nil, err
+		}
+		fileMap[file] = contents
+	}
+	return fileMap, err
+}
 
-	return nil
+func listFilesInBucket(bucket *storage.BucketHandle, bucketName, path string) ([]string, error) {
+	ctx := context.Background()
+	query := &storage.Query{Prefix: path}
+	logrus.Infof("Querying %s", bucketName)
+	it := bucket.Objects(ctx, query)
+	var files []string
+	for {
+		obj, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			logrus.Errorf("listBucket: unable to list files in bucket at %s, err: %v", path, err)
+			return nil, err
+		}
+		files = append(files, obj.Name)
+	}
+	return files, nil
 }
 
 func getProjectID(scope string) (string, error) {

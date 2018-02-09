@@ -66,6 +66,8 @@ func (s *Snapshotter) snapShotFS(f io.Writer) error {
 	})
 }
 
+// TODO: ignore anything in /proc/self/mounts
+
 func ignorePath(p string) bool {
 	for _, d := range []string{"/dev", "/sys", "/proc", "/work-dir", "/dockerfile"} {
 		if strings.HasPrefix(p, d) {

@@ -11,8 +11,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/priyawadhwa/kbuild/pkg/storage"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/priyawadhwa/kbuild/contexts"
 	"github.com/priyawadhwa/kbuild/pkg/util"
+
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -34,7 +36,7 @@ func main() {
 	}
 
 	var dockerfilePath = flag.String("dockerfile", "/dockerfile/Dockerfile", "path to dockerfile")
-	var context = flag.String("context", "", "source context")
+	var srcContext = flag.String("context", "", "source context")
 	var name = flag.String("name", "gcr.io/priya-wadhwa/kbuild:finalimage", "name of image destination")
 	flag.Parse()
 
@@ -51,14 +53,16 @@ func main() {
 	}
 
 	// create source context
-	bucket, _, err := storage.CreateStorageBucket()
+	dockerfile, err := os.Open(*dockerfilePath)
 	if err != nil {
 		panic(err)
 	}
-	if err := storage.UploadContextToBucket(*context, bucket); err != nil {
+	dockerfileDeps, err := docker.GetDockerfileDependencies(*srcContext, dockerfile)
+	context := contexts.GetContext(*srcContext)
+	source, err := context.CopyFilesToContext(dockerfileDeps)
+	if err != nil {
 		panic(err)
 	}
-	return
 
 	env := v1.EnvVar{
 		Name:  "KBUILD_DEST_IMAGE",
@@ -96,7 +100,7 @@ func main() {
 							Name:  "init-static",
 							Image: "gcr.io/priya-wadhwa/kbuilder:latest",
 							Command: []string{
-								"/work-dir/main",
+								"/work-dir/main", "--source", source,
 							},
 							Args:         []string{},
 							VolumeMounts: []v1.VolumeMount{v1.VolumeMount{Name: "dockerfile", MountPath: "/dockerfile"}},
