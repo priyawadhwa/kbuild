@@ -15,15 +15,13 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-var bucketName string
-
 // CreateStorageBucket creates a storage bucket to store the source context in
 func CreateStorageBucket() (*storage.BucketHandle, string, error) {
 	ctx := context.Background()
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return nil, "", nil
+		return nil, "", err
 	}
 	projectID, err := getProjectID("")
 	bucketName := fmt.Sprintf("kbuild-buckets-%d", time.Now().Unix())
@@ -39,9 +37,16 @@ func CreateStorageBucket() (*storage.BucketHandle, string, error) {
 	return bucket, bucketName, nil
 }
 
-// DeleteStorageBucket deletes the storage bucket the source context is in
-func DeleteStorageBucket() error {
+// DeleteStorageBucket deletes the storage bucket
+func DeleteStorageBucket(bucketName string) error {
+	ctx := context.Background()
 
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+	bucket := client.Bucket(bucketName)
+	bucket.Delete(ctx)
 	return nil
 }
 
@@ -84,13 +89,8 @@ func uploadFile(bucket *storage.BucketHandle, fileContents []byte, path string) 
 	return nil
 }
 
-// SetBucketname sets the bucket name as a global variable
-func SetBucketname(bn string) {
-	bucketName = bn
-}
-
 // GetFilesFromStorageBucket gets all files at path
-func GetFilesFromStorageBucket(path string) (map[string][]byte, error) {
+func GetFilesFromStorageBucket(bucketName string, path string) (map[string][]byte, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -98,7 +98,7 @@ func GetFilesFromStorageBucket(path string) (map[string][]byte, error) {
 	}
 	bucket := client.Bucket(bucketName)
 	// return nil
-	files, err := listFilesInBucket(bucket, path)
+	files, err := listFilesInBucket(bucket, bucketName, path)
 	if err != nil {
 		return nil, err
 	}
@@ -118,10 +118,13 @@ func GetFilesFromStorageBucket(path string) (map[string][]byte, error) {
 	return fileMap, err
 }
 
-func listFilesInBucket(bucket *storage.BucketHandle, path string) ([]string, error) {
+func listFilesInBucket(bucket *storage.BucketHandle, bucketName, path string) ([]string, error) {
 	ctx := context.Background()
 	query := &storage.Query{Prefix: path}
-	logrus.Infof("Querying %s", bucketName)
+	if path == "" {
+		query = nil
+	}
+	logrus.Infof("Querying %s for %s", bucketName, path)
 	it := bucket.Objects(ctx, query)
 	var files []string
 	for {

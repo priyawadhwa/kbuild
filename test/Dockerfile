@@ -3,4 +3,5 @@ RUN echo "hey" > /etc/foo
 RUN echo "baz" > /etc/foo
 RUN echo "baz" > /etc/foo2
 
-COPY ./pkg foo
+COPY ./pkg/image/ foo
+COPY ./pkg/*/stor*.go /storage/

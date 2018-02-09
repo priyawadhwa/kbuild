@@ -3,6 +3,7 @@ package snapshot
 import (
 	"archive/tar"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
@@ -23,7 +24,7 @@ func NewSnapshotter(l *LayeredMap, d string) *Snapshotter {
 }
 
 func (s *Snapshotter) Init() error {
-	if err := s.snapShotFS(ioutil.Discard); err != nil {
+	if _, err := s.snapShotFS(ioutil.Discard); err != nil {
 		return err
 	}
 	return nil
@@ -39,31 +40,37 @@ func (s *Snapshotter) TakeSnapshot() error {
 		return err
 	}
 
-	if err := s.snapShotFS(f); err != nil {
+	added, err := s.snapShotFS(f)
+	if err != nil {
 		return err
 	}
-
+	if !added {
+		logrus.Infof("No files were changed in this command, this layer will not be appended.")
+		return os.Remove(path)
+	}
 	s.snapshots = append(s.snapshots, path)
 	return nil
 }
 
-func (s *Snapshotter) snapShotFS(f io.Writer) error {
+func (s *Snapshotter) snapShotFS(f io.Writer) (bool, error) {
 	s.l.Snapshot()
-
+	added := false
 	w := tar.NewWriter(f)
 	defer w.Close()
 
-	return filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
 		if ignorePath(path) {
 			return nil
 		}
 
 		// Only add to the tar if we add it to the layeredmap.
 		if s.l.MaybeAdd(path) {
+			added = true
 			return addToTar(path, info, w)
 		}
 		return nil
 	})
+	return added, err
 }
 
 // TODO: ignore anything in /proc/self/mounts

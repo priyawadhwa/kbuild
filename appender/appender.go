@@ -5,6 +5,7 @@ import (
 	"github.com/containers/image/docker"
 	"github.com/containers/image/signature"
 	"github.com/containers/image/transports/alltransports"
+	"github.com/priyawadhwa/kbuild/pkg/constants"
 	"github.com/priyawadhwa/kbuild/pkg/image"
 	"github.com/sirupsen/logrus"
 
@@ -13,8 +14,6 @@ import (
 	"sort"
 	"strings"
 )
-
-var directory = "/work-dir/"
 
 var ms image.MutableSource
 
@@ -34,7 +33,7 @@ func AppendLayersAndPushImage(srcImg, dstImg string) error {
 }
 
 func appendLayers() error {
-	dir, err := os.Open(directory)
+	dir, err := os.Open(constants.WorkDir)
 	if err != nil {
 		panic(err)
 	}
@@ -47,9 +46,8 @@ func appendLayers() error {
 		}
 	}
 	sort.Strings(tars)
-	logrus.Debug("Appending layers: ", tars)
 	for _, file := range tars {
-		contents, err := ioutil.ReadFile(directory + file)
+		contents, err := ioutil.ReadFile(constants.WorkDir + file)
 		if err != nil {
 			panic(err)
 		}
@@ -75,7 +73,6 @@ func initializeMutableSource(img string) error {
 }
 
 func pushImage(destImg string) error {
-	// TODO: REMOVE
 	logrus.Info("Pushing image to ", destImg)
 	srcRef, err := image.NewProxyReference(nil, ms)
 

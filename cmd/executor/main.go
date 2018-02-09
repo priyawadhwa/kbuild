@@ -4,22 +4,20 @@ import (
 	"flag"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
-	"os"
 
 	"github.com/priyawadhwa/kbuild/appender"
 	"github.com/priyawadhwa/kbuild/commands"
+	"github.com/priyawadhwa/kbuild/contexts/dest"
+	"github.com/priyawadhwa/kbuild/pkg/constants"
 	"github.com/priyawadhwa/kbuild/pkg/dockerfile"
 	"github.com/priyawadhwa/kbuild/pkg/env"
 	"github.com/priyawadhwa/kbuild/pkg/snapshot"
-	"github.com/priyawadhwa/kbuild/pkg/storage"
 	"github.com/priyawadhwa/kbuild/pkg/util"
 )
 
 var dockerfilePath = flag.String("dockerfile", "/dockerfile/Dockerfile", "Path to Dockerfile.")
 var source = flag.String("source", "kbuild-buckets-1518126874", "Source context location")
 var destImg = flag.String("dest", "gcr.io/priya-wadhwa/kbuilder:finalimage", "Destination of final image")
-
-var dir = "/"
 
 func main() {
 	flag.Parse()
@@ -43,7 +41,7 @@ func main() {
 	}
 
 	l := snapshot.NewLayeredMap(util.Hasher())
-	snapshotter := snapshot.NewSnapshotter(l, dir)
+	snapshotter := snapshot.NewSnapshotter(l, constants.RootDir)
 
 	// Take initial snapshot
 	if err := snapshotter.Init(); err != nil {
@@ -52,12 +50,12 @@ func main() {
 	// Save environment variables
 	env.SetEnvironmentVariables(from)
 
-	// Set source information
-	storage.SetBucketname(*source)
+	// Set context information
+	context := dest.GetContext(*source)
 
 	for _, s := range stages {
 		for _, cmd := range s.Commands {
-			dockerCommand := commands.GetCommand(cmd)
+			dockerCommand := commands.GetCommand(cmd, context)
 			if err := dockerCommand.ExecuteCommand(); err != nil {
 				panic(err)
 			}
