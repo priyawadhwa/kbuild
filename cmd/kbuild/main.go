@@ -64,11 +64,6 @@ func main() {
 		panic(err)
 	}
 
-	env := v1.EnvVar{
-		Name:  "KBUILD_DEST_IMAGE",
-		Value: *name,
-	}
-
 	b, err := ioutil.ReadFile(*dockerfilePath)
 	if err != nil {
 		log.Fatal(err)
@@ -100,11 +95,10 @@ func main() {
 							Name:  "init-static",
 							Image: "gcr.io/priya-wadhwa/kbuilder:latest",
 							Command: []string{
-								"/work-dir/main", "--source", source,
+								"/work-dir/main", "--source", source, "--dest", *name,
 							},
 							Args:         []string{},
 							VolumeMounts: []v1.VolumeMount{v1.VolumeMount{Name: "dockerfile", MountPath: "/dockerfile"}},
-							Env:          []v1.EnvVar{env},
 						},
 					},
 					RestartPolicy: v1.RestartPolicyNever,
