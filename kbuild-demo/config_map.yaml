@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dockerfile-config
+  namespace: default
+data:
+  Dockerfile: 
+  >
+    FROM gcr.io/google-appengine/debian9:latest
+    RUN echo "hey" > /etc/hey
+    COPY context/f* context/
+
+    FROM gcr.io/google-appengine/python:latest
+    RUN pip install mock
+    COPY --from=0 /etc/hey /hey
+    COPY --from=0 context/ foo/

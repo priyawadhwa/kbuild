@@ -1,0 +1,3 @@
+steps:
+  - name: gcr.io/kbuild-project/executor:latest
+    args: ["/work-dir/executor", "--dockerfile=/workspace/Dockerfile", "--context=/workspace/", "--name=gcr.io/priya-wadhwa/kbuild:example", "--verbosity=debug"]
